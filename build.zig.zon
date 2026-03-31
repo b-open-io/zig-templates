@@ -1,0 +1,16 @@
+.{
+    .name = .zig_templates,
+    .version = "0.1.0",
+    .minimum_zig_version = "0.15.2",
+    .fingerprint = 0x82f53de7718d4613,
+    .dependencies = .{
+        .bsvz = .{ .path = "../bsvz" },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "tests",
+        "README.md",
+    },
+}
