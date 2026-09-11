@@ -19,6 +19,7 @@ const ERR_INVALID_INPUT: c_int = -1;
 const ERR_CRYPTO: c_int = -2;
 const ERR_BUFFER_TOO_SMALL: c_int = -3;
 const ERR_ALLOC: c_int = -4;
+const ERR_DISABLED: c_int = -5;
 
 fn copyToOut(src: []const u8, out_buf: [*c]u8, out_len: *usize) c_int {
     @memcpy(out_buf[0..src.len], src);
@@ -180,13 +181,11 @@ export fn zt_ordlock_create(
     out_script: [*c]u8,
     out_script_len: *usize,
 ) c_int {
-    const script = ordlock.lock(
-        alloc,
-        seller_pkh[0..20].*,
-        pay_pkh[0..20].*,
-        price_sats,
-    ) catch return ERR_ALLOC;
-    defer alloc.free(script);
-
-    return copyToOut(script, out_script, out_script_len);
+    // ORDLOCK_LISTING_DISABLED — restore when the replacement listing contract ships.
+    _ = seller_pkh;
+    _ = pay_pkh;
+    _ = price_sats;
+    _ = out_script;
+    _ = out_script_len;
+    return ERR_DISABLED;
 }
