@@ -66,6 +66,8 @@ pub const OrdLockData = struct {
 pub const Error = error{
     InvalidPushData,
     UnexpectedEndOfScript,
+    /// ORDLOCK_LISTING_DISABLED — restore when the replacement listing contract ships.
+    ListingDisabled,
 } || std.mem.Allocator.Error || bsvz.script.builder.Error;
 
 // ── Public API ───────────────────────────────────────────────────────
@@ -79,6 +81,21 @@ pub const Error = error{
 ///
 /// Returns heap-allocated script bytes. Caller owns the memory.
 pub fn lock(
+    allocator: std.mem.Allocator,
+    seller_pkh: [20]u8,
+    pay_pkh: [20]u8,
+    price_sats: u64,
+) Error![]u8 {
+    // ORDLOCK_LISTING_DISABLED — restore when the replacement listing contract ships.
+    _ = allocator;
+    _ = seller_pkh;
+    _ = pay_pkh;
+    _ = price_sats;
+    return error.ListingDisabled;
+}
+
+/// Historical constructor for tests and decode fixtures. Do not emit on-chain.
+pub fn legacyLock(
     allocator: std.mem.Allocator,
     seller_pkh: [20]u8,
     pay_pkh: [20]u8,
@@ -109,6 +126,19 @@ pub fn lock(
 /// instead of constructing one from a P2PKH address. Useful when the payout
 /// includes a non-standard locking script.
 pub fn lockRaw(
+    allocator: std.mem.Allocator,
+    seller_pkh: [20]u8,
+    payout: []const u8,
+) Error![]u8 {
+    // ORDLOCK_LISTING_DISABLED — restore when the replacement listing contract ships.
+    _ = allocator;
+    _ = seller_pkh;
+    _ = payout;
+    return error.ListingDisabled;
+}
+
+/// Historical constructor for tests. Do not emit on-chain.
+pub fn legacyLockRaw(
     allocator: std.mem.Allocator,
     seller_pkh: [20]u8,
     payout: []const u8,
@@ -283,6 +313,13 @@ fn hexNibble(comptime c: u8) u4 {
 
 // ── Tests ────────────────────────────────────────────────────────────
 
+test "lock is deprecated" {
+    const allocator = std.testing.allocator;
+    const seller_pkh = [_]u8{0x12} ** 20;
+    const pay_pkh = [_]u8{0xab} ** 20;
+    try std.testing.expectError(error.ListingDisabled, lock(allocator, seller_pkh, pay_pkh, 1000));
+}
+
 test "lock produces script with correct prefix and suffix" {
     const allocator = std.testing.allocator;
 
@@ -290,7 +327,7 @@ test "lock produces script with correct prefix and suffix" {
     const pay_pkh = [_]u8{0xab} ** 20;
     const price: u64 = 1000;
 
-    const script_bytes = try lock(allocator, seller_pkh, pay_pkh, price);
+    const script_bytes = try legacyLock(allocator, seller_pkh, pay_pkh, price);
     defer allocator.free(script_bytes);
 
     // Script must start with prefix
@@ -311,7 +348,7 @@ test "decode round-trip" {
     const pay_pkh = [_]u8{0x56} ** 20;
     const price: u64 = 5000;
 
-    const script_bytes = try lock(allocator, seller_pkh, pay_pkh, price);
+    const script_bytes = try legacyLock(allocator, seller_pkh, pay_pkh, price);
     defer allocator.free(script_bytes);
 
     const data = decode(script_bytes) orelse return error.TestUnexpectedResult;
@@ -365,7 +402,7 @@ test "lock with various prices" {
     const prices = [_]u64{ 1, 100, 10_000, 1_000_000, 100_000_000, 2_100_000_000_000_000 };
 
     for (prices) |price| {
-        const script_bytes = try lock(allocator, seller_pkh, pay_pkh, price);
+        const script_bytes = try legacyLock(allocator, seller_pkh, pay_pkh, price);
         defer allocator.free(script_bytes);
 
         const data = decode(script_bytes) orelse return error.TestUnexpectedResult;
@@ -380,7 +417,7 @@ test "isOrdLock detects valid ordlock scripts" {
     const seller_pkh = [_]u8{0x11} ** 20;
     const pay_pkh = [_]u8{0x22} ** 20;
 
-    const script_bytes = try lock(allocator, seller_pkh, pay_pkh, 42);
+    const script_bytes = try legacyLock(allocator, seller_pkh, pay_pkh, 42);
     defer allocator.free(script_bytes);
 
     try std.testing.expect(isOrdLock(script_bytes));
@@ -398,7 +435,7 @@ test "payout output contains correct P2PKH structure" {
     const pay_pkh = [_]u8{0x02} ** 20;
     const price: u64 = 7777;
 
-    const script_bytes = try lock(allocator, seller_pkh, pay_pkh, price);
+    const script_bytes = try legacyLock(allocator, seller_pkh, pay_pkh, price);
     defer allocator.free(script_bytes);
 
     const data = decode(script_bytes) orelse return error.TestUnexpectedResult;
@@ -429,7 +466,7 @@ test "lockRaw with custom payout" {
     payout[10] = 0x01; // push 1 byte
     payout[11] = 0xff; // data
 
-    const script_bytes = try lockRaw(allocator, seller_pkh, &payout);
+    const script_bytes = try legacyLockRaw(allocator, seller_pkh, &payout);
     defer allocator.free(script_bytes);
 
     const data = decode(script_bytes) orelse return error.TestUnexpectedResult;

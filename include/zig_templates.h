@@ -64,11 +64,8 @@ int zt_lock_create(const unsigned char *pubkey_hash,
 
 /* ── OrdLock (marketplace listing) ────────────────────────────────── */
 
-/* Create an OrdLock locking script for NFT marketplace listings.
- * seller_pkh: 20-byte public key hash of seller (cancel address).
- * pay_pkh: 20-byte public key hash of payment destination.
- * price_sats: listing price in satoshis.
- * out_script: caller-allocated buffer. out_script_len receives actual length. */
+/* Deprecated: OrdLock listing creation is paused pending a replacement contract.
+ * Currently returns -5 (ERR_DISABLED). Decode of existing listings is unchanged. */
 int zt_ordlock_create(const unsigned char *seller_pkh,
                        const unsigned char *pay_pkh,
                        uint64_t price_sats,
